@@ -10,6 +10,8 @@ class User:
         self.total_posts = 0
         self.followers = 0
         self.following = 0
+        self.friends = set()  # Maintain a set of friends
+        self.following_users = set()  # Maintain a set of users followed by this user
 
     def increment_total_posts(self):
         self.total_posts += 1
@@ -22,6 +24,16 @@ class User:
 
     def follow(self, user):
         print(f"Following user: {user.username}")
+        self.friends.add(user)
+        self.following_users.add(user)  # Add the user to the following list
+
+    def suggest_friends(self):
+        suggestions = set()
+        for follower in self.friends:
+            for following_user in follower.following_users:
+                if following_user != self and following_user not in self.friends and following_user not in suggestions:
+                    suggestions.add(following_user)
+        return suggestions
 
 users = {}
 
@@ -37,7 +49,7 @@ class App:
 
     def setup_ui(self):
         self.root = tk.Tk()
-        self.root.title("Instagram")
+        self.root.title("Recommend")
 
         self.create_login_page()
 
@@ -71,6 +83,7 @@ class App:
 
         upload_image_button = tk.Button(self.root, text="Upload Image", command=self.upload_image)
         follow_button = tk.Button(self.root, text="Follow", command=self.follow_user)
+        friend_suggestion_button = tk.Button(self.root, text="Friend Suggestion", command=self.show_friend_suggestions)
 
         logout_button = tk.Button(self.root, text="Logout", command=self.logout)
 
@@ -80,7 +93,8 @@ class App:
         following_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
         upload_image_button.grid(row=4, column=0, padx=5, pady=5)
         follow_button.grid(row=5, column=0, padx=5, pady=5)
-        logout_button.grid(row=6, column=0, padx=5, pady=5)
+        friend_suggestion_button.grid(row=6, column=0, padx=5, pady=5)
+        logout_button.grid(row=7, column=0, padx=5, pady=5)
 
     def upload_image(self):
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.png;*.jpeg")])
@@ -101,6 +115,16 @@ class App:
                 messagebox.showinfo("Success", f"You are now following {follow_username}")
             else:
                 messagebox.showerror("Error", f"User '{follow_username}' not found.")
+
+    def show_friend_suggestions(self):
+        if self.current_user:
+            suggestions = self.current_user.suggest_friends()
+            if suggestions:
+                messagebox.showinfo("Friend Suggestions", f"Friend suggestions for {self.current_user.username}: {', '.join(user.username for user in suggestions)}")
+            else:
+                messagebox.showinfo("Friend Suggestions", "No friend suggestions available.")
+        else:
+            messagebox.showerror("Error", "Please login to see friend suggestions.")
 
     def logout(self):
         self.current_user = None
