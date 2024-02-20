@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
-from tkinter import ttk
+from tkinter import messagebox, ttk
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import requests
@@ -11,37 +10,34 @@ class ImageDownloaderApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Image Downloader")
-
-        self.url_label = ttk.Label(root, text="Enter URLs (separated by commas):")
-        self.url_label.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
-
-        self.url_entry = ttk.Entry(root, width=50)
-        self.url_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
-
-        self.download_button = ttk.Button(root, text="Download", command=self.download_images)
-        self.download_button.grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
-
-        self.pause_button = ttk.Button(root, text="Pause", state="disabled", command=self.pause_download)
-        self.pause_button.grid(row=0, column=3, padx=5, pady=5, sticky=tk.W)
-
-        self.resume_button = ttk.Button(root, text="Resume", state="disabled", command=self.resume_download)
-        self.resume_button.grid(row=0, column=4, padx=5, pady=5, sticky=tk.W)
-
-        self.cancel_button = ttk.Button(root, text="Cancel", state="disabled", command=self.cancel_download)
-        self.cancel_button.grid(row=0, column=5, padx=5, pady=5, sticky=tk.W)
-
-        self.progress_label = ttk.Label(root, text="Progress:")
-        self.progress_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-
-        self.progressbar = ttk.Progressbar(root, orient=tk.HORIZONTAL, mode='determinate')
-        self.progressbar.grid(row=1, column=1, columnspan=5, padx=5, pady=5, sticky=tk.W+tk.E)
-
+        
+        # Frame for images
         self.images_frame = ttk.Frame(root)
         self.images_frame.grid(row=2, column=0, columnspan=6, padx=5, pady=5, sticky=tk.W+tk.E)
-
+        
+        # Other UI elements
+        self.url_label = ttk.Label(root, text="Enter URLs (separated by commas):")
+        self.url_label.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)        
+        self.url_entry = ttk.Entry(root, width=50)
+        self.url_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+        self.download_button = ttk.Button(root, text="Download", command=self.download_images)
+        self.download_button.grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
+        self.pause_button = ttk.Button(root, text="Pause", state="disabled", command=self.pause_download)
+        self.pause_button.grid(row=0, column=3, padx=5, pady=5, sticky=tk.W)
+        self.resume_button = ttk.Button(root, text="Resume", state="disabled", command=self.resume_download)
+        self.resume_button.grid(row=0, column=4, padx=5, pady=5, sticky=tk.W)
+        self.cancel_button = ttk.Button(root, text="Cancel", state="disabled", command=self.cancel_download)
+        self.cancel_button.grid(row=0, column=5, padx=5, pady=5, sticky=tk.W)
+        self.progress_label = ttk.Label(root, text="Progress:")
+        self.progress_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        self.progressbar = ttk.Progressbar(root, orient=tk.HORIZONTAL, mode='determinate')
+        self.progressbar.grid(row=1, column=1, columnspan=5, padx=5, pady=5, sticky=tk.W+tk.E)
+        
+        # Threading
         self.lock = threading.Lock()
         self.thread_pool = ThreadPoolExecutor(max_workers=5)
         self.download_tasks = []
+        self.current_row = 0
 
     def download_images(self):
         urls = self.url_entry.get().split(',')
@@ -89,15 +85,24 @@ class ImageDownloaderApp:
                 with self.lock:
                     image_bytes = BytesIO(response.content)
                     image = Image.open(image_bytes)
+                    # Resize the image to fit a smaller size
+                    max_width = 200
+                    max_height = 200
+                    width, height = image.size
+                    if width > max_width or height > max_height:
+                        if width > height:
+                            ratio = max_width / width
+                        else:
+                            ratio = max_height / height
+                        new_width = int(width * ratio)
+                        new_height = int(height * ratio)
+                        image = image.resize((new_width, new_height), Image.ANTIALIAS)
                     photo_image = ImageTk.PhotoImage(image)
-
                     image_label = ttk.Label(self.images_frame, image=photo_image)
                     image_label.image = photo_image
-                    image_label.grid(row=len(self.download_tasks), column=0, padx=5, pady=5)
-
+                    image_label.grid(row=self.current_row, column=0, padx=5, pady=5, sticky="w")
+                    self.current_row += 1
                     self.progressbar['value'] = 100
-            else:
-                messagebox.showerror("Error", f"Failed to download image {url}. Invalid URL or network issue.")
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Error", f"Failed to download image {url}: {str(e)}")
         except Exception as e:

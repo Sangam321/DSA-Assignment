@@ -1,5 +1,4 @@
 import collections
-
 class Solution:
     def closestKValues(self, root, target, k):
         dq = collections.deque()
@@ -15,7 +14,6 @@ class Solution:
                 dq.popleft()
             else:
                 dq.pop()
-
         return list(dq)
 if __name__ == "__main__":
     # TreeNode class
@@ -24,7 +22,6 @@ if __name__ == "__main__":
             self.val = val
             self.left = left
             self.right = right
-
     # Create tree nodes
     root = TreeNode(4)
     root.left = TreeNode(2)

@@ -1,90 +1,143 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox
+from tkinter import filedialog
+from tkinter import simpledialog
 
-class GraphGUI:
-    def __init__(self, master):
-        self.master = master
-        self.master.title("Graph GUI")
+class User:
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+        self.total_posts = 0
+        self.followers = 0
+        self.following = 0
 
-        self.graph = Graph()
+    def increment_total_posts(self):
+        self.total_posts += 1
 
-        self.user_label = ttk.Label(master, text="User:")
-        self.user_entry = ttk.Entry(master)
-        self.user_label.grid(row=0, column=0, padx=5, pady=5)
-        self.user_entry.grid(row=0, column=1, padx=5, pady=5)
+    def increment_followers(self):
+        self.followers += 1
 
-        self.friend_label = ttk.Label(master, text="Friend:")
-        self.friend_entry = ttk.Entry(master)
-        self.friend_label.grid(row=1, column=0, padx=5, pady=5)
-        self.friend_entry.grid(row=1, column=1, padx=5, pady=5)
+    def increment_following(self):
+        self.following += 1
 
-        self.add_button = ttk.Button(master, text="Add Edge", command=self.add_edge)
-        self.add_button.grid(row=2, column=0, columnspan=2, pady=10)
+    def follow(self, user):
+        print(f"Following user: {user.username}")
 
-        self.display_button = ttk.Button(master, text="Display Graph", command=self.display_graph)
-        self.display_button.grid(row=3, column=0, columnspan=2, pady=10)
+users = {}
 
-        self.suggest_button = ttk.Button(master, text="Get Friend Suggestions", command=self.get_friend_suggestions)
-        self.suggest_button.grid(row=4, column=0, columnspan=2, pady=10)
+class App:
+    WINDOW_WIDTH = 400
+    WINDOW_HEIGHT = 300
+    BOX_WIDTH = 200
+    BOX_HEIGHT = 30
 
-    def add_edge(self):
-        user = self.user_entry.get()
-        friend = self.friend_entry.get()
+    def __init__(self):
+        self.current_user = None
+        self.setup_ui()
 
-        if user and friend:
-            self.graph.add_edge(user, friend)
-            self.user_entry.delete(0, tk.END)
-            self.friend_entry.delete(0, tk.END)
+    def setup_ui(self):
+        self.root = tk.Tk()
+        self.root.title("Instagram")
 
-    def get_friend_suggestions(self):
-        user = self.user_entry.get()
-        if user in self.graph.graph_store:
-            suggestions = self.graph.get_friend_suggestions(user)
-            suggestion_str = f"Friend suggestions for {user}: {', '.join(suggestions)}"
-            messagebox.showinfo("Friend Suggestions", suggestion_str)
+        self.create_login_page()
+
+    def create_login_page(self):
+        self.clear_frame()
+
+        username_label = tk.Label(self.root, text="Username:")
+        username_field = tk.Entry(self.root, width=self.BOX_WIDTH)
+
+        password_label = tk.Label(self.root, text="Password:")
+        password_field = tk.Entry(self.root, show="*", width=self.BOX_WIDTH)
+
+        login_button = tk.Button(self.root, text="Login", command=lambda: self.login(username_field.get(), password_field.get()))
+        register_button = tk.Button(self.root, text="Register", command=lambda: self.register(username_field.get(), password_field.get()))
+
+        username_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        username_field.grid(row=0, column=1, padx=5, pady=5, columnspan=2)
+        password_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        password_field.grid(row=1, column=1, padx=5, pady=5, columnspan=2)
+        login_button.grid(row=2, column=1, padx=5, pady=5)
+        register_button.grid(row=2, column=2, padx=5, pady=5)
+
+    def create_profile_page(self):
+        self.clear_frame()
+
+        username_label = tk.Label(self.root, text=f"Username: {self.current_user.username}")
+
+        total_posts_label = tk.Label(self.root, text=f"Total Posts: {self.current_user.total_posts}")
+        followers_label = tk.Label(self.root, text=f"Followers: {self.current_user.followers}")
+        following_label = tk.Label(self.root, text=f"Following: {self.current_user.following}")
+
+        upload_image_button = tk.Button(self.root, text="Upload Image", command=self.upload_image)
+        follow_button = tk.Button(self.root, text="Follow", command=self.follow_user)
+
+        logout_button = tk.Button(self.root, text="Logout", command=self.logout)
+
+        username_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        total_posts_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        followers_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        following_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        upload_image_button.grid(row=4, column=0, padx=5, pady=5)
+        follow_button.grid(row=5, column=0, padx=5, pady=5)
+        logout_button.grid(row=6, column=0, padx=5, pady=5)
+
+    def upload_image(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.png;*.jpeg")])
+        if file_path:
+            messagebox.showinfo("Success", f"Image uploaded successfully: {file_path}")
+            self.current_user.increment_total_posts()
+            self.update_labels()
+
+    def follow_user(self):
+        follow_username = simpledialog.askstring("Follow User", "Enter the username to follow:")
+        if follow_username:
+            if follow_username in users:
+                follow_user = users[follow_username]
+                self.current_user.follow(follow_user)
+                self.current_user.increment_following()
+                follow_user.increment_followers()
+                self.update_labels()
+                messagebox.showinfo("Success", f"You are now following {follow_username}")
+            else:
+                messagebox.showerror("Error", f"User '{follow_username}' not found.")
+
+    def logout(self):
+        self.current_user = None
+        self.create_login_page()
+
+    def login(self, username, password):
+        if username in users:
+            user = users[username]
+            if user.password == password:
+                self.current_user = user
+                self.create_profile_page()
+            else:
+                messagebox.showerror("Error", "Incorrect password!")
         else:
-            messagebox.showinfo("Friend Suggestions", f"No friend suggestions for {user}.")
+            messagebox.showerror("Error", "User not found! Please register.")
 
-    def display_graph(self):
-        result = self.graph.print_graph()
-        result_str = "\n".join([f"{user}: {friends}" for user, friends in result.items()])
-        messagebox.showinfo("Graph Information", result_str)
-
-
-class Graph:
-    graph_store = dict()
-
-    def add_edge(self, user, friend):
-        if user not in self.graph_store:
-            self.graph_store[user] = [friend]
+    def register(self, username, password):
+        if username in users:
+            messagebox.showerror("Error", "Username already exists!")
         else:
-            # Check if the friend is not already in the list
-            if friend not in self.graph_store[user]:
-                self.graph_store[user].append(friend)
+            new_user = User(username, password)
+            users[username] = new_user
+            messagebox.showinfo("Success", "Registration successful!")
 
-        if friend not in self.graph_store:
-            self.graph_store[friend] = [user]
-        else:
-            # Check if the user is not already in the list
-            if user not in self.graph_store[friend]:
-                self.graph_store[friend].append(user)
+    def clear_frame(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-    def get_friend_suggestions(self, user):
-        if user in self.graph_store:
-            friends_of_friends = set()
-            for friend in self.graph_store[user]:
-                friends_of_friends.update(self.graph_store[friend])
-            # Remove user and direct friends from suggestions
-            suggestions = friends_of_friends - {user} - set(self.graph_store[user])
-            return list(suggestions)
-        else:
-            return []
-
-    def print_graph(self):
-        return self.graph_store
-
+    def update_labels(self):
+        for widget in self.root.winfo_children():
+            if isinstance(widget, tk.Label) and widget.cget("text").startswith("Total Posts"):
+                widget.config(text=f"Total Posts: {self.current_user.total_posts}")
+            elif isinstance(widget, tk.Label) and widget.cget("text").startswith("Followers"):
+                widget.config(text=f"Followers: {self.current_user.followers}")
+            elif isinstance(widget, tk.Label) and widget.cget("text").startswith("Following"):
+                widget.config(text=f"Following: {self.current_user.following}")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = GraphGUI(root)
-    root.mainloop()
+    app = App()
+    app.root.mainloop()
