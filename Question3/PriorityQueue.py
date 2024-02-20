@@ -1,16 +1,13 @@
 class PriorityQueue:
     def __init__(self):
         self.data = []
-
     def is_empty(self):
         return len(self.data) == 0
-
     def peek(self):
         if not self.is_empty():
             return self.data[0]
         else:
             return None
-
     def enqueue(self, item):
         self.data.append(item)
         c_index = len(self.data) - 1
@@ -20,7 +17,6 @@ class PriorityQueue:
             self.data[c_index], self.data[p_index] = self.data[p_index], self.data[c_index]
             c_index = p_index
             p_index = (c_index - 1) // 2
-
     def dequeue(self):
         if len(self.data) == 0:
             return None
@@ -30,7 +26,7 @@ class PriorityQueue:
             to_return = self.data[0]
             self.data[0] = self.data.pop(-1)
             p_index = 0
-
+ # Maintain heap property by swapping with children if necessary
             while True:
                 l_index = 2 * p_index + 1
                 lesser_child_index = l_index
@@ -52,9 +48,6 @@ class PriorityQueue:
 
     def __str__(self):
         return str(self.data)
-
-
-# Example usage:
 if __name__ == "__main__":
     pq = PriorityQueue()
     pq.enqueue(3)
@@ -62,17 +55,12 @@ if __name__ == "__main__":
     pq.enqueue(4)
     pq.enqueue(2)
     pq.enqueue(5)
-    print(pq.dequeue())  # Output: 1
-    print(pq.dequeue())  # Output: 2
-    print(pq.dequeue())  # Output: 3
-    print(pq.dequeue())  # Output: 4
-    print(pq.dequeue())  # Output: 5
-
-
-#     min heap kukras algo
-
+    print(pq.dequeue()) 
+    print(pq.dequeue())  
+    print(pq.dequeue())  
+    print(pq.dequeue()) 
+    print(pq.dequeue())  
 from typing import List
-
 class DisjointSet:
     def __init__(self, vertices):
         self.parent = [-1] * vertices
@@ -95,27 +83,18 @@ class Edge:
 
 class KukrasAlgorithm:
     def kruskalMST(self, edges: List[Edge], vertices: int) -> List[Edge]:
-        # Initialize disjoint-set
         ds = DisjointSet(vertices)
-
-        # Sort edges based on weight
         edges.sort(key=lambda x: x.weight)
-
-        # Initialize result
         result = []
 
         for edge in edges:
             src_parent = ds.find(edge.src)
             dest_parent = ds.find(edge.dest)
-
-            # Add edge to result if including it doesn't form a cycle
             if src_parent != dest_parent:
                 result.append(edge)
                 ds.union(src_parent, dest_parent)
 
         return result
-
-# Example usage
 if __name__ == "__main__":
     edges = [
         Edge(0, 1, 10),

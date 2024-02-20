@@ -1,30 +1,21 @@
 def get_individuals(n, intervals, first_person):
-    result = set()
-    known_secrets = set()
-    known_secrets.add(first_person)
-
+    knows_secret = [False] * n 
+    knows_secret[first_person] = True  # Mark the first person as knowing the secret 
     for interval in intervals:
-        start, end = interval
+        for i in range(interval[0], interval[1] + 1):
+            if knows_secret[i]:
+                for j in range(interval[0], interval[1] + 1):
+                    knows_secret[j] = True
+                break
 
-        new_individuals = set()
+    result = [i for i in range(n) if knows_secret[i]]
+    return result
 
-        for i in range(start, end + 1):
-            if i in known_secrets:
-                # Add individuals who receive the secret during this interval
-                for j in range(n):
-                    if j not in known_secrets:
-                        new_individuals.add(j)
-
-        known_secrets.update(new_individuals)
-
-    result.update(known_secrets)
-    return sorted(list(result))
 
 if __name__ == "__main__":
-    n = 5
-    intervals = [[0, 2], [1, 3], [2, 4]]
+    n = 5  # Total number of individuals
+    intervals = [(0, 2), (1, 3), (2, 4)] 
     first_person = 0
-
     result = get_individuals(n, intervals, first_person)
 
     print("Individuals who will eventually know the secret:", result)

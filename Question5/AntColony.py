@@ -18,13 +18,16 @@ class AntColony:
         self.pheromone_levels = np.ones((self.num_cities, self.num_cities)) / (self.num_cities * self.num_cities)
 
     def solve(self):
+        # Main loop for the number of iterations
         for _ in range(self.num_iterations):
             ant_paths = []
             ant_distances = np.zeros(self.num_ants)
+            # Construct solutions for each ant
             for ant_index in range(self.num_ants):
                 path = self.construct_solution(random.randint(0, self.num_cities - 1))
                 ant_paths.append(path)
                 ant_distances[ant_index] = self.calculate_distance(path)
+                # Update best path if a shorter path is found
                 if ant_distances[ant_index] < self.best_distance:
                     self.best_distance = ant_distances[ant_index]
                     self.best_path = list(path)
@@ -32,6 +35,7 @@ class AntColony:
             self.decay_pheromones()
 
     def construct_solution(self, starting_city):
+        # Construct a solution for a single ant
         path = [starting_city]
         visited = [False] * self.num_cities
         visited[starting_city] = True
@@ -40,10 +44,11 @@ class AntColony:
             next_city = self.select_next_city(current_city, visited)
             path.append(next_city)
             visited[next_city] = True
-        path.append(starting_city)
+        path.append(starting_city)  # Complete the cycle
         return path
 
     def select_next_city(self, current_city, visited):
+        # Select the next city for an ant based on pheromone levels 
         probabilities = np.zeros(self.num_cities)
         total_probability = 0
         for i in range(self.num_cities):
@@ -60,12 +65,14 @@ class AntColony:
                     return i
 
     def calculate_distance(self, path):
+        # Calculate the total distance of a path
         distance = 0
         for i in range(len(path) - 1):
             distance += self.distances[path[i]][path[i + 1]]
         return distance
 
     def update_pheromones(self, ant_paths, ant_distances):
+        # Update pheromone levels based on ant solutions
         for i in range(self.num_cities):
             for j in range(self.num_cities):
                 if i != j:
@@ -81,6 +88,7 @@ class AntColony:
         self.pheromone_levels *= self.decay_factor
 
     def get_best_path(self):
+        # Get the best path found by the ants
         return self.best_path
 
     def get_best_distance(self):

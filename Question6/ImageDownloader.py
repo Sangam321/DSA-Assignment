@@ -1,144 +1,117 @@
-import os
-import requests
-from concurrent.futures import ThreadPoolExecutor
 import tkinter as tk
+from tkinter import messagebox
 from tkinter import ttk
-from datetime import datetime
 import threading
-import time
+from concurrent.futures import ThreadPoolExecutor
+import requests
+from PIL import Image, ImageTk
+from io import BytesIO
 
-class ImageDownloaderGUI:
+class ImageDownloaderApp:
     def __init__(self, root):
-        self.futures = None
         self.root = root
         self.root.title("Image Downloader")
 
-        self.urls_entry = ttk.Entry(root, width=50)
-        self.urls_entry.grid(row=0, column=0, columnspan=3, padx=10, pady=10, sticky='ew')
+        self.url_label = ttk.Label(root, text="Enter URLs (separated by commas):")
+        self.url_label.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
 
-        self.start_button = ttk.Button(root, text="Start Download", command=self.start_download)
-        self.start_button.grid(row=1, column=0, padx=10, pady=10)
+        self.url_entry = ttk.Entry(root, width=50)
+        self.url_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
 
-        self.pause_button = ttk.Button(root, text="Pause Download", command=self.pause_download)
-        self.pause_button.grid(row=1, column=1, padx=10, pady=10)
+        self.download_button = ttk.Button(root, text="Download", command=self.download_images)
+        self.download_button.grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
 
-        self.resume_button = ttk.Button(root, text="Resume Download", command=self.resume_download)
-        self.resume_button.grid(row=1, column=2, padx=10, pady=10)
+        self.pause_button = ttk.Button(root, text="Pause", state="disabled", command=self.pause_download)
+        self.pause_button.grid(row=0, column=3, padx=5, pady=5, sticky=tk.W)
 
-        self.cancel_button = ttk.Button(root, text="Cancel Download", command=self.cancel_download)
-        self.cancel_button.grid(row=2, column=0, columnspan=3, padx=10, pady=10)
+        self.resume_button = ttk.Button(root, text="Resume", state="disabled", command=self.resume_download)
+        self.resume_button.grid(row=0, column=4, padx=5, pady=5, sticky=tk.W)
 
-        self.status_label = ttk.Label(root, text="")
-        self.status_label.grid(row=3, column=0, columnspan=3, padx=10, pady=10)
+        self.cancel_button = ttk.Button(root, text="Cancel", state="disabled", command=self.cancel_download)
+        self.cancel_button.grid(row=0, column=5, padx=5, pady=5, sticky=tk.W)
 
-        self.download_path = os.getcwd()+'/images'
-        self.download_queue = queue.Queue()
-        self.thread_pool = None  # ThreadPoolExecutor instance
-        self.is_paused = False
-        self.is_cancelled = False
+        self.progress_label = ttk.Label(root, text="Progress:")
+        self.progress_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+
+        self.progressbar = ttk.Progressbar(root, orient=tk.HORIZONTAL, mode='determinate')
+        self.progressbar.grid(row=1, column=1, columnspan=5, padx=5, pady=5, sticky=tk.W+tk.E)
+
+        self.images_frame = ttk.Frame(root)
+        self.images_frame.grid(row=2, column=0, columnspan=6, padx=5, pady=5, sticky=tk.W+tk.E)
+
         self.lock = threading.Lock()
-
-
-        # Dictionary to store progress bars for each URL
-        self.progress_bars = {}
-
-    def download_image(self, url,image_id):
-        try:
-            response = requests.get(url, stream=True)
-            response.raise_for_status()
-
-            total_size = int(response.headers.get('content-length', 0))
-            downloaded_size = 0
-
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            filename = os.path.join(self.download_path, f"{timestamp}_{image_id}.jpg")
-            with open(filename, 'wb') as file:
-                for chunk in response.iter_content(chunk_size=4000):
-                    with self.lock:
-                        if self.is_cancelled:
-                            break
-
-                        while self.is_paused:
-                            if self.is_cancelled:
-                                break
-                    if chunk:
-                        file.write(chunk)
-                        downloaded_size += len(chunk)
-                        # Update progress bar
-                        progress = int((downloaded_size / total_size) * 100)
-                        self.progress_bars[url].set(progress)
-                        time.sleep(10)
-
-            with self.lock:
-                self.download_queue.put(f"Downloaded: {url}")
-
-        except Exception as e:
-            with self.lock:
-                self.download_queue.put(f"Error downloading {url}: {e}")
-
-    def start_download(self):
-        urls = self.urls_entry.get().split(',')
-        self.urls_entry.config(state=tk.DISABLED)
-        self.status_label.config(text="Downloading...")
-
-        os.makedirs(self.download_path, exist_ok=True)
-
-        # Create a ThreadPoolExecutor with a maximum of 5 worker threads
         self.thread_pool = ThreadPoolExecutor(max_workers=5)
+        self.download_tasks = []
 
-        for i,url in enumerate(urls):
-            # Create a progress bar for each URL
-            progress_var = tk.DoubleVar()
-            progress_bar = ttk.Progressbar(self.root, variable=progress_var, length=200, mode='determinate')
-            progress_bar.grid(row=len(self.progress_bars) + 4, column=0, columnspan=3, padx=10, pady=5, sticky='ew')
-
-            self.progress_bars[url] = progress_var
-
-            # Submit the download task to the ThreadPoolExecutor
-            self.thread_pool.submit(self.download_image, url.strip(), i)
-
-        # Schedule checking the download queue
-        self.root.after(100, self.check_download_queue)
-
-    def check_download_queue(self):
-        try:
-            while True:
-                message = self.download_queue.get_nowait()
-                self.status_label.config(text=message)
-
-        except queue.Empty:
-            # Check if there are any running tasks in the ThreadPoolExecutor
-            self.status_label.config(text="Download complete")
-            self.urls_entry.config(state=tk.NORMAL)
+    def download_images(self):
+        urls = self.url_entry.get().split(',')
+        for url in urls:
+            if url.strip():
+                self.progressbar['value'] = 0
+                self.download_button['state'] = "disabled"
+                self.pause_button['state'] = "normal"
+                self.cancel_button['state'] = "normal"
+                task = self.thread_pool.submit(self.download_image, url.strip())
+                self.download_tasks.append(task)
 
     def pause_download(self):
-        self.is_paused = True
-        self.status_label.config(text="Download paused")
+        for task in self.download_tasks:
+            task.cancel()
+        self.download_button['state'] = "normal"
+        self.pause_button['state'] = "disabled"
+        self.resume_button['state'] = "normal"
+        self.cancel_button['state'] = "disabled"
 
     def resume_download(self):
-        self.is_paused = False
-        self.status_label.config(text="Download resumed")
+        urls = self.url_entry.get().split(',')
+        for url in urls:
+            if url.strip():
+                self.progressbar['value'] = 0
+                self.download_button['state'] = "disabled"
+                self.pause_button['state'] = "normal"
+                self.resume_button['state'] = "disabled"
+                self.cancel_button['state'] = "normal"
+                task = self.thread_pool.submit(self.download_image, url.strip())
+                self.download_tasks.append(task)
 
     def cancel_download(self):
-        self.is_cancelled = True
-        self.status_label.config(text="Download cancelled")
-        self.urls_entry.config(state=tk.NORMAL)
+        self.thread_pool.shutdown(wait=False)
+        self.download_button['state'] = "normal"
+        self.pause_button['state'] = "disabled"
+        self.resume_button['state'] = "disabled"
+        self.cancel_button['state'] = "disabled"
+        self.progressbar['value'] = 0
 
-        # Remove downloaded images
-        # for filename in os.listdir(self.download_path):
-        #     file_path = os.path.join(self.download_path, filename)
-        #     try:
-        #         if os.path.isfile(file_path) and (filename.endswith('.jpg') or filename.endswith('.png')):
-        #             os.unlink(file_path)
-        #     except Exception as e:
-        #         print(f"Error deleting {file_path}: {e}")
-        # Close the application window
-        self.root.destroy()
+    def download_image(self, url):
+        try:
+            response = requests.get(url, stream=True)
+            if response.status_code == 200:
+                with self.lock:
+                    image_bytes = BytesIO(response.content)
+                    image = Image.open(image_bytes)
+                    photo_image = ImageTk.PhotoImage(image)
 
+                    image_label = ttk.Label(self.images_frame, image=photo_image)
+                    image_label.image = photo_image
+                    image_label.grid(row=len(self.download_tasks), column=0, padx=5, pady=5)
+
+                    self.progressbar['value'] = 100
+            else:
+                messagebox.showerror("Error", f"Failed to download image {url}. Invalid URL or network issue.")
+        except requests.exceptions.RequestException as e:
+            messagebox.showerror("Error", f"Failed to download image {url}: {str(e)}")
+        except Exception as e:
+            messagebox.showerror("Error", f"An unexpected error occurred while downloading image {url}: {str(e)}")
+        finally:
+            self.download_button['state'] = "normal"
+            self.pause_button['state'] = "disabled"
+            self.resume_button['state'] = "disabled"
+            self.cancel_button['state'] = "disabled"
+
+def main():
+    root = tk.Tk()
+    app = ImageDownloaderApp(root)
+    root.mainloop()
 
 if __name__ == "__main__":
-    import queue
-
-    root = tk.Tk()
-    app = ImageDownloaderGUI(root)
-    root.mainloop()
+    main()

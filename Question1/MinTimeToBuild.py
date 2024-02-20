@@ -16,8 +16,6 @@ def min_time_to_build_engines(engines, split_cost):
             dp[i] = min(dp[i], time)
     return dp[max_engines] 
 
-
-
 engines = [3, 4, 5, 2]
 split_cost = 2
 

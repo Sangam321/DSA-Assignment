@@ -6,7 +6,6 @@ def min_steps_to_collect_all_keys(maze):
 
     target_keys = 0
     start_x, start_y = 0, 0
-
     # Extract information from the maze
     for i in range(rows):
         for j in range(cols):
@@ -14,12 +13,12 @@ def min_steps_to_collect_all_keys(maze):
             if cell == 'S':
                 start_x, start_y = i, j
             elif cell == 'E':
-                target_keys |= (1 << (ord('f') - ord('a')))  # Set the bit for the exit door
+                target_keys |= (1 << (ord('f') - ord('a')))  
             elif 'a' <= cell <= 'f':
-                target_keys |= (1 << (ord(cell) - ord('a')))  # Set the bit for the key
+                target_keys |= (1 << (ord(cell) - ord('a')))
 
-    # Perform BFS traversal
-    queue = deque([(start_x, start_y, 0, 0)])  # (x, y, keys, steps)
+    #BFS traversal
+    queue = deque([(start_x, start_y, 0, 0)]) 
 
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
     visited = [[[False] * (1 << 6) for _ in range(cols)] for _ in range(rows)]
@@ -28,7 +27,7 @@ def min_steps_to_collect_all_keys(maze):
         x, y, keys, steps = queue.popleft()
 
         if keys == target_keys:
-            return steps  # All keys collected, return the steps
+            return steps
 
         for dx, dy in directions:
             new_x, new_y = x + dx, y + dy
@@ -39,15 +38,15 @@ def min_steps_to_collect_all_keys(maze):
                 if cell == 'E' or cell == 'P' or ('a' <= cell <= 'f') or ('A' <= cell <= 'F' and (keys & (1 << (ord(cell) - ord('A')))) != 0):
                     new_keys = keys
                     if 'a' <= cell:
-                        new_keys |= (1 << (ord(cell) - ord('a')))  # Collect the key
+                        new_keys |= (1 << (ord(cell) - ord('a')))  #Collect the key
 
                     if not visited[new_x][new_y][new_keys]:
                         visited[new_x][new_y][new_keys] = True
                         queue.append((new_x, new_y, new_keys, steps + 1))
 
-    return -1  # All possible moves explored and keys not collected, return -1
+    return -1 
 
 if __name__ == "__main__":
     maze = ["SPaPP", "WWWPW", "bPAPB"]
     result = min_steps_to_collect_all_keys(maze)
-    print("Minimum number of moves:", result)  # Output: 8
+    print("Minimum number of moves:", result)
