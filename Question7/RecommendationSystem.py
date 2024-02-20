@@ -12,6 +12,8 @@ class User:
         self.following = 0
         self.friends = set()  
         self.following_users = set() 
+        self.posts = []  # List to store uploaded posts (file paths)
+
     def increment_total_posts(self):
         self.total_posts += 1
 
@@ -82,6 +84,8 @@ class App:
 
         upload_image_button = tk.Button(self.root, text="Upload Image", command=self.upload_image)
         follow_button = tk.Button(self.root, text="Follow", command=self.follow_user)
+        see_posts_button = tk.Button(self.root, text="See Posts", command=self.see_posts)  # New button
+
         friend_suggestion_button = tk.Button(self.root, text="Friend Suggestion", command=self.show_friend_suggestions)
 
         logout_button = tk.Button(self.root, text="Logout", command=self.logout)
@@ -92,13 +96,15 @@ class App:
         following_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
         upload_image_button.grid(row=4, column=0, padx=5, pady=5)
         follow_button.grid(row=5, column=0, padx=5, pady=5)
-        friend_suggestion_button.grid(row=6, column=0, padx=5, pady=5)
-        logout_button.grid(row=7, column=0, padx=5, pady=5)
+        see_posts_button.grid(row=6, column=0, padx=5, pady=5)  # New button placed below the Follow button
+        friend_suggestion_button.grid(row=7, column=0, padx=5, pady=5)
+        logout_button.grid(row=8, column=0, padx=5, pady=5)
 
     def upload_image(self):
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.png;*.jpeg")])
         if file_path:
             messagebox.showinfo("Success", f"Image uploaded successfully: {file_path}")
+            self.current_user.posts.append(file_path)  # Store the file path in the user's posts list
             self.current_user.increment_total_posts()
             self.update_labels()
 
@@ -114,6 +120,49 @@ class App:
                 messagebox.showinfo("Success", f"You are now following {follow_username}")
             else:
                 messagebox.showerror("Error", f"User '{follow_username}' not found.")
+
+    def see_posts(self):
+        followed_username = simpledialog.askstring("See Posts", "Enter the username of the followed user:")
+        if followed_username:
+            if followed_username in users:
+                followed_user = users[followed_username]
+                if followed_user.total_posts > 0:
+                    self.display_posts(followed_user)
+                else:
+                    messagebox.showinfo("No Posts", f"{followed_username} has not uploaded any posts yet.")
+            else:
+                messagebox.showerror("Error", f"User '{followed_username}' not found.")
+
+    def display_posts(self, user):
+        posts_window = tk.Toplevel(self.root)
+        posts_window.title(f"Posts by {user.username}")
+
+        for i, post_image_path in enumerate(user.posts):
+            post_image = tk.PhotoImage(file=post_image_path)
+
+            post_label = tk.Label(posts_window, image=post_image)
+            post_label.image = post_image  
+            post_label.grid(row=i, column=0, padx=5, pady=5)
+
+            like_button = tk.Button(posts_window, text="Like", command=lambda idx=i: self.like_post(user, idx))
+            like_button.grid(row=i+1, column=0, padx=5, pady=5)
+
+            comment_button = tk.Button(posts_window, text="Comment", command=lambda idx=i: self.comment_post(user, idx))
+            comment_button.grid(row=i+1, column=1, padx=5, pady=5)
+
+            posts_window.grid_rowconfigure(i, minsize=10)
+
+        if not user.posts:
+            no_posts_label = tk.Label(posts_window, text="No posts available.")
+            no_posts_label.grid(row=0, column=0, padx=5, pady=5)
+
+    def like_post(self, user, idx):
+        # Placeholder for like functionality
+        pass
+
+    def comment_post(self, user, idx):
+        # Placeholder for comment functionality
+        pass
 
     def show_friend_suggestions(self):
         if self.current_user:
