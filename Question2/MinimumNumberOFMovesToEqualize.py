@@ -23,11 +23,10 @@ def get_impacted_devices(edges, target_device):
                 queue.append(neighbor)
                 visited.add(neighbor)
                 impacted_devices.append(neighbor)
-
     return sorted(impacted_devices)
 
 if __name__ == "__main__":
     edges = [[0,1],[0,2],[1,3],[1,6],[2,4],[4,6],[4,5],[5,7]]
     target_device = 4
     impacted_devices = get_impacted_devices(edges, target_device)
-    print("Impacted Device List:", impacted_devices)  # Output: [5, 7]
+    print("Impacted Device List:", impacted_devices)
