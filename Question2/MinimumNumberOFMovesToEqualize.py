@@ -1,33 +1,26 @@
-from collections import defaultdict, deque
+def min_moves_to_equalize(sewing_machines):
+    total_dresses = sum(sewing_machines)
+    machines_count = len(sewing_machines)
 
-def get_impacted_devices(edges, target_device):
-    graph = defaultdict(list)
-    visited = set()
-    impacted_devices = []
+    # If total dresses cannot be evenly distributed, return -1
+    if total_dresses % machines_count != 0:
+        return -1
 
-    # Build the adjacency list representation of the network connections
-    for u, v in edges:
-        graph[u].append(v)
-        graph[v].append(u)
+    # Calculate the target number of dresses for each machine
+    target_dresses = total_dresses // machines_count
+    moves = 0
 
-    # Perform BFS to find impacted devices
-    queue = deque([target_device])
-    visited.add(target_device)
+    # Iterate until all machines have the target dress count
+    for dresses in sewing_machines:
+        # Calculate the difference between current dresses and the target
+        diff = dresses - target_dresses
+        # Accumulate moves needed to equalize dresses
+        if diff > 0:
+            moves += diff
 
-    while queue:
-        current_device = queue.popleft()
-
-        # Traverse all connected devices
-        for neighbor in graph[current_device]:
-            if neighbor not in visited:
-                queue.append(neighbor)
-                visited.add(neighbor)
-                impacted_devices.append(neighbor)
-
-    return sorted(impacted_devices)
+    return moves
 
 
-edges = [[0,1],[0,2],[1,3],[1,6],[2,4],[4,6],[4,5],[5,7]]
-target_device = 4
-impacted_devices = get_impacted_devices(edges, target_device)
-print("Impacted Device List:", impacted_devices)  # Output: [5, 7]
+if __name__ == "__main__":
+    sewing_machines = [1, 0, 5]
+    print(min_moves_to_equalize(sewing_machines))  # Output: 2
