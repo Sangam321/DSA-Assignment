@@ -10,9 +10,8 @@ class User:
         self.total_posts = 0
         self.followers = 0
         self.following = 0
-        self.friends = set()  # Maintain a set of friends
-        self.following_users = set()  # Maintain a set of users followed by this user
-
+        self.friends = set()  
+        self.following_users = set() 
     def increment_total_posts(self):
         self.total_posts += 1
 
